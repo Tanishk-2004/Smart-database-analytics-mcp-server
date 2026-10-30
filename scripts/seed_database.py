@@ -144,14 +144,14 @@ def seed_orders(cur, number_of_orders=300):
 
 def seed_order_items(cur):
 
-    # Step 1: Fetch existing order IDs
+    
     cur.execute("SELECT order_id FROM orders ORDER BY order_id")
     order_ids = [row[0] for row in cur.fetchall()]
 
     if not order_ids:
         raise ValueError("No orders found. Seed orders first.")
 
-    # Step 2: Fetch all products, including active and inactive
+    
     cur.execute(
         """
         SELECT product_id, price
@@ -164,12 +164,12 @@ def seed_order_items(cur):
     if not products:
         raise ValueError("No products found. Seed products first.")
 
-    # Step 3: Generate and insert order items
+    
     total_items = 0
 
     for order_id in order_ids:
 
-        # Randomly select 1–5 unique products per order
+        
         number_of_items = random.randint(
             1, min(5, len(products))
         )
@@ -199,6 +199,79 @@ def seed_order_items(cur):
     )
 
 
+def seed_payments(cur):
+
+    
+    cur.execute(
+        """
+        SELECT
+            o.order_id,
+            o.order_date,
+            SUM(oi.quantity * oi.unit_price) AS order_total
+        FROM orders o
+        JOIN order_items oi
+            ON o.order_id = oi.order_id
+        GROUP BY o.order_id, o.order_date
+        ORDER BY o.order_id
+        """
+    )
+
+    orders = cur.fetchall()
+
+    if not orders:
+        raise ValueError(
+            "No order items found. Seed order items first."
+        )
+
+    
+    payment_methods = [
+        "credit_card",
+        "debit_card",
+        "upi",
+        "net_banking",
+        "wallet",
+        "cash_on_delivery",
+    ]
+
+    payment_statuses = [
+        "successful",
+        "successful",
+        "successful",
+        "pending",
+        "failed",
+        "refunded",
+    ]
+
+    
+    total_payments = 0
+
+    for order_id, order_date, order_total in orders:
+
+        payment_method = random.choice(payment_methods)
+        payment_status = random.choice(payment_statuses)
+
+        cur.execute(
+            """
+            INSERT INTO payments
+                (order_id, amount, payment_method, status, payment_date)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (
+                order_id,
+                order_total,
+                payment_method,
+                payment_status,
+                order_date,
+            ),
+        )
+
+        total_payments += 1
+
+    print(
+        f"{total_payments} payment records inserted successfully!"
+    )
+
+
 
 
 def main():
@@ -212,7 +285,7 @@ def main():
         ) as conn:
 
             with conn.cursor() as cur:
-                seed_order_items(cur)
+                seed_payments(cur)
 
             print("Database connection successful!")
 
