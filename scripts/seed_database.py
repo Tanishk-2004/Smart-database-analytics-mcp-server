@@ -141,6 +141,66 @@ def seed_orders(cur, number_of_orders=300):
 
     print(f"{number_of_orders} orders inserted successfully!")
 
+
+def seed_order_items(cur):
+
+    # Step 1: Fetch existing order IDs
+    cur.execute("SELECT order_id FROM orders ORDER BY order_id")
+    order_ids = [row[0] for row in cur.fetchall()]
+
+    if not order_ids:
+        raise ValueError("No orders found. Seed orders first.")
+
+    # Step 2: Fetch all products, including active and inactive
+    cur.execute(
+        """
+        SELECT product_id, price
+        FROM products
+        ORDER BY product_id
+        """
+    )
+    products = cur.fetchall()
+
+    if not products:
+        raise ValueError("No products found. Seed products first.")
+
+    # Step 3: Generate and insert order items
+    total_items = 0
+
+    for order_id in order_ids:
+
+        # Randomly select 1–5 unique products per order
+        number_of_items = random.randint(
+            1, min(5, len(products))
+        )
+
+        selected_products = random.sample(
+            products, number_of_items
+        )
+
+        for product_id, price in selected_products:
+
+            quantity = random.randint(1, 5)
+
+            cur.execute(
+                """
+                INSERT INTO order_items
+                    (order_id, product_id, quantity, unit_price)
+                VALUES (%s, %s, %s, %s)
+                """,
+                (order_id, product_id, quantity, price),
+            )
+
+            total_items += 1
+
+    print(
+        f"{total_items} order items inserted "
+        f"across {len(order_ids)} orders!"
+    )
+
+
+
+
 def main():
     try:
         with psycopg.connect(
@@ -152,7 +212,7 @@ def main():
         ) as conn:
 
             with conn.cursor() as cur:
-                seed_orders(cur)
+                seed_order_items(cur)
 
             print("Database connection successful!")
 
