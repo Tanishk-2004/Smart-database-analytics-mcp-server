@@ -5,6 +5,7 @@ import random
 import psycopg
 from dotenv import load_dotenv
 from faker import Faker
+from datetime import datetime, timedelta, timezone
 
 load_dotenv()
 
@@ -99,6 +100,47 @@ def seed_products(cur):
     print(f"{len(products)} products inserted successfully!")
 
 
+
+def seed_orders(cur, number_of_orders=300):
+    
+    cur.execute("SELECT customer_id FROM customers")
+    customer_ids = [row[0] for row in cur.fetchall()]
+
+    if not customer_ids:
+        raise ValueError("No customers found. Seed customers first.")
+
+    order_statuses = [
+        "pending",
+        "confirmed",
+        "shipped",
+        "delivered",
+        "cancelled",
+        "returned",
+    ]
+
+    now = datetime.now(timezone.utc)
+    start_date = now - timedelta(days=365)
+
+    for _ in range(number_of_orders):
+        customer_id = random.choice(customer_ids)
+
+        random_seconds = random.randint(
+            0, int((now - start_date).total_seconds())
+        )
+        order_date = start_date + timedelta(seconds=random_seconds)
+
+        status = random.choice(order_statuses)
+
+        cur.execute(
+            """
+            INSERT INTO orders (customer_id, order_date, status)
+            VALUES (%s, %s, %s)
+            """,
+            (customer_id, order_date, status),
+        )
+
+    print(f"{number_of_orders} orders inserted successfully!")
+
 def main():
     try:
         with psycopg.connect(
@@ -110,7 +152,7 @@ def main():
         ) as conn:
 
             with conn.cursor() as cur:
-                seed_products(cur)
+                seed_orders(cur)
 
             print("Database connection successful!")
 
