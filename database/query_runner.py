@@ -1,21 +1,17 @@
-from database.db_connection import get_connection
+# Testing File.
+
+from database.query_executer import execute_query
 
 
-def main():
-    try:
-        with get_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("Select count(*) From customers")
+def main(): 
+    query="Select full_name,city from customers limit 1 "
 
-                rows=cur.fetchall()
+    results=execute_query(query)
 
-                for row in rows:
-                    print(row)
-
-            print("Database connection successfull!")
-    except Exception as e:
-        print("Something went wrong:",e)
-
+    for row in results:
+        print(row["full_name"])
+        print(row["city"])
+        print("----------------")
 
 if __name__=="__main__":
     main()
