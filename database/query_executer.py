@@ -1,5 +1,5 @@
-from psycopg.errors import QueryCanceled,ReadOnlySqlTransaction
-from psycopg import OperationalError
+from psycopg.errors import QueryCanceled,ReadOnlySqlTransaction,InsufficientPrivilege
+from psycopg import OperationalError,Error
 from psycopg_pool import PoolTimeout
 from psycopg.rows import dict_row
 
@@ -43,18 +43,12 @@ def execute_query(query: str, params: tuple = ()):
             "Unable to communicate with the database."
         ) from exc
 
-    except ReadOnlySqlTransaction as exc:
+    except (ReadOnlySqlTransaction,InsufficientPrivilege) as exc:
         raise DatabaseReadOnlyViolationError(
             "This operation is not allowed. The database is read-only."
         ) from exc
 
-    except Exception as exc:
-        # Handle only PostgreSQL errors here.
-        from psycopg import Error
-
-        if isinstance(exc, Error):
-            raise DatabaseQueryError(
-                "An error occurred while executing the database query."
-            ) from exc
-
-        raise
+    except Error as exc:
+        raise DatabaseQueryError(
+            "An error occurred while executing the database query."
+        ) from exc
