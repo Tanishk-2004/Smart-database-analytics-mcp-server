@@ -1,21 +1,50 @@
-from database.db_connection import get_connection
+from database.db_connection import (
+    open_pool,
+    close_pool,
+    connection_pool
+)
+
+from database.query_executer import execute_query
+
+from database.exceptions import DatabaseQueryTimeoutError, DatabasePoolTimeoutError, DatabaseConnectionError, DatabaseQueryError,DatabaseReadOnlyViolationError
+
 
 
 def main():
+
     try:
-        with get_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("Select count(*) From customers")
+        open_pool()
 
-                rows=cur.fetchall()
+        print("Initial statistics:")
+        print(connection_pool.get_stats())
 
-                for row in rows:
-                    print(row)
+        query = "delete from customers where city ='Anand';"
 
-            print("Database connection successfull!")
-    except Exception as e:
-        print("Something went wrong:",e)
+        results = execute_query(query)
+
+        # print("Query completed:", results)\
+        for row in results:
+            print(row)
+
+    except DatabaseQueryTimeoutError as exc:
+        print(f"Query Timeout: {exc}")
+
+    except DatabasePoolTimeoutError as exc:
+        print(f"Pool Error: {exc}")
+
+    except DatabaseConnectionError as exc:
+        print(f"Connection Error: {exc}")
+
+    except DatabaseQueryError as exc:
+        print(f"Database Error: {exc}")
+
+    except DatabaseReadOnlyViolationError as exc:
+        print(f"Permission Error: {exc}")
+
+    finally:
+        close_pool()
+        print("\nConnection pool closed!")
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main()
