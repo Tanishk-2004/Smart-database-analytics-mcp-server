@@ -6,7 +6,7 @@ from database.db_connection import (
 
 from database.query_executer import execute_query
 
-from database.exceptions import DatabaseQueryTimeoutError, DatabasePoolTimeoutError, DatabaseConnectionError, DatabaseQueryError
+from database.exceptions import DatabaseQueryTimeoutError, DatabasePoolTimeoutError, DatabaseConnectionError, DatabaseQueryError,DatabaseReadOnlyViolationError
 
 
 
@@ -18,11 +18,13 @@ def main():
         print("Initial statistics:")
         print(connection_pool.get_stats())
 
-        query = "SELECT pg_sleep(10);"
+        query = "delete from customers where city ='Anand';"
 
         results = execute_query(query)
 
-        print("Query completed:", results)
+        # print("Query completed:", results)\
+        for row in results:
+            print(row)
 
     except DatabaseQueryTimeoutError as exc:
         print(f"Query Timeout: {exc}")
@@ -35,6 +37,9 @@ def main():
 
     except DatabaseQueryError as exc:
         print(f"Database Error: {exc}")
+
+    except DatabaseReadOnlyViolationError as exc:
+        print(f"Permission Error: {exc}")
 
     finally:
         close_pool()

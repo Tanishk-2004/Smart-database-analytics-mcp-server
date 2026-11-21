@@ -12,3 +12,6 @@ class DatabaseConnectionError(Exception):
 
 class DatabaseQueryError(Exception):
     pass
+
+class DatabaseReadOnlyViolationError(Exception):
+    pass

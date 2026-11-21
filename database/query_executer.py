@@ -1,11 +1,11 @@
-from psycopg.errors import QueryCanceled
+from psycopg.errors import QueryCanceled,ReadOnlySqlTransaction
 from psycopg import OperationalError
 from psycopg_pool import PoolTimeout
 from psycopg.rows import dict_row
 
 from database.db_connection import connection_pool
 
-from database.exceptions import DatabaseQueryTimeoutError, DatabasePoolTimeoutError, DatabaseConnectionError,DatabaseQueryError
+from database.exceptions import DatabaseQueryTimeoutError, DatabasePoolTimeoutError, DatabaseConnectionError,DatabaseQueryError,DatabaseReadOnlyViolationError
 
 
 
@@ -41,6 +41,11 @@ def execute_query(query: str, params: tuple = ()):
     except OperationalError as exc:
         raise DatabaseConnectionError(
             "Unable to communicate with the database."
+        ) from exc
+
+    except ReadOnlySqlTransaction as exc:
+        raise DatabaseReadOnlyViolationError(
+            "This operation is not allowed. The database is read-only."
         ) from exc
 
     except Exception as exc:
